@@ -27,14 +27,17 @@ def change_svg_color(svg_path, new_color):
         return input_string
 
     # Iterasi setiap elemen dan ganti atribut warna yang relevan
-    for element in root.iter():
-        # Ganti atribut 'fill' atau 'stroke' jika ada
-        if 'fill' in element.attrib:
-            element.attrib['fill'] = replace_color_in_string(element.attrib['fill'], new_color)
-        if 'stroke' in element.attrib:
-            element.attrib['stroke'] = replace_color_in_string(element.attrib['stroke'], new_color)
-        if 'style' in element.attrib:
-            element.attrib['style'] = replace_color_in_string(element.attrib['style'], new_color)
+    for element in root.iter('path'):  # Hanya iterasi untuk elemen <path>
+        # Jika ada atribut 'id', kita dapat mengakses atau memanipulasinya jika diperlukan
+        if 'id' in element.attrib:
+            path_id = element.attrib['id']
+            # Ganti atribut 'fill' atau 'stroke' jika ada
+            if 'fill' in element.attrib:
+                element.attrib['fill'] = replace_color_in_string(element.attrib['fill'], new_color)
+            if 'stroke' in element.attrib:
+                element.attrib['stroke'] = replace_color_in_string(element.attrib['stroke'], new_color)
+            if 'style' in element.attrib:
+                element.attrib['style'] = replace_color_in_string(element.attrib['style'], new_color)
 
     # Simpan file SVG yang telah diperbarui
     new_svg_path = svg_path.stem + f"_modified{svg_path.suffix}"
