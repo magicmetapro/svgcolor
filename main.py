@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 
 # Fungsi untuk mengganti warna di file SVG
-def change_svg_color(svg_path, new_color):
+def change_svg_color(svg_path, selected_paths, new_color):
     tree = ET.parse(svg_path)
     root = tree.getroot()
     
@@ -28,16 +28,16 @@ def change_svg_color(svg_path, new_color):
 
     # Iterasi setiap elemen dan ganti atribut warna yang relevan
     for element in root.iter('path'):  # Hanya iterasi untuk elemen <path>
-        # Jika ada atribut 'id', kita dapat mengakses atau memanipulasinya jika diperlukan
         if 'id' in element.attrib:
             path_id = element.attrib['id']
-            # Ganti atribut 'fill' atau 'stroke' jika ada
-            if 'fill' in element.attrib:
-                element.attrib['fill'] = replace_color_in_string(element.attrib['fill'], new_color)
-            if 'stroke' in element.attrib:
-                element.attrib['stroke'] = replace_color_in_string(element.attrib['stroke'], new_color)
-            if 'style' in element.attrib:
-                element.attrib['style'] = replace_color_in_string(element.attrib['style'], new_color)
+            # Ganti warna hanya pada path yang dipilih
+            if path_id in selected_paths:
+                if 'fill' in element.attrib:
+                    element.attrib['fill'] = replace_color_in_string(element.attrib['fill'], new_color)
+                if 'stroke' in element.attrib:
+                    element.attrib['stroke'] = replace_color_in_string(element.attrib['stroke'], new_color)
+                if 'style' in element.attrib:
+                    element.attrib['style'] = replace_color_in_string(element.attrib['style'], new_color)
 
     # Simpan file SVG yang telah diperbarui
     new_svg_path = svg_path.stem + f"_modified{svg_path.suffix}"
@@ -50,42 +50,50 @@ def main():
     
     # Upload multiple SVG files
     uploaded_files = st.file_uploader("Upload SVG Files", type="svg", accept_multiple_files=True)
+    
     if uploaded_files:
-        # Color picker to choose the new color
-        selected_color = st.color_picker("Pick a color", "#FF5733")
-        
-        # Create CSS filter effect preview
-        css_filter = f"filter: hue-rotate({selected_color})"
-        st.write("CSS Filter:")
-        st.code(css_filter, language='css')
+        for file in uploaded_files:
+            with open(file.name, "wb") as f:
+                f.write(file.getbuffer())
+            svg_path = Path(file.name)
+            
+            # Memuat file SVG untuk menampilkan semua path
+            tree = ET.parse(svg_path)
+            root = tree.getroot()
+            
+            # Menyaring elemen path yang memiliki id
+            paths = [element.attrib['id'] for element in root.iter('path') if 'id' in element.attrib]
+            
+            # Jika ada path yang ditemukan, tampilkan checkbox untuk memilih path
+            if paths:
+                selected_paths = st.multiselect(
+                    "Select Paths to Change Color",
+                    options=paths,
+                    default=paths  # Secara default pilih semua path
+                )
+            else:
+                st.write("No paths with 'id' found in the SVG.")
 
-        st.write("Selected Color Preview:")
-        st.markdown(f'<div style="width: 100px; height: 100px; background-color: {selected_color};"></div>', unsafe_allow_html=True)
-        
-        # Button for color conversion
-        if st.button("Apply Color"):
-            st.write("Processing...")
-            output_files = []
+            # Color picker untuk memilih warna
+            selected_color = st.color_picker("Pick a color", "#FF5733")
             
-            # Process each uploaded SVG file
-            for file in uploaded_files:
-                # Save the uploaded file temporarily
-                with open(file.name, "wb") as f:
-                    f.write(file.getbuffer())
-                svg_path = Path(file.name)
-                new_svg_path = change_svg_color(svg_path, selected_color)
-                output_files.append(new_svg_path)
-            
-            # Display modified files for download
-            for output_file in output_files:
-                output_file_name = Path(output_file).name  # Correct way to extract the file name
+            # Menampilkan preview warna yang dipilih
+            st.write("Selected Color Preview:")
+            st.markdown(f'<div style="width: 100px; height: 100px; background-color: {selected_color};"></div>', unsafe_allow_html=True)
+
+            # Button untuk menerapkan warna ke path yang dipilih
+            if st.button("Apply Color"):
+                st.write("Processing...")
+                new_svg_path = change_svg_color(svg_path, selected_paths, selected_color)
+                # Tampilkan tombol download untuk file SVG yang telah dimodifikasi
                 st.download_button(
-                    label=f"Download {output_file_name}",
-                    data=open(output_file, "rb").read(),
-                    file_name=output_file_name,
+                    label="Download Modified SVG",
+                    data=open(new_svg_path, "rb").read(),
+                    file_name=Path(new_svg_path).name,
                     mime="image/svg+xml"
                 )
-                os.remove(output_file)
+                # Hapus file setelah diproses
+                os.remove(new_svg_path)
 
 if __name__ == "__main__":
     main()
