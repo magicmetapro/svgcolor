@@ -8,12 +8,22 @@ def change_svg_color(svg_path, new_color):
     tree = ET.parse(svg_path)
     root = tree.getroot()
     
-    # Iterasi setiap elemen untuk menemukan dan mengganti warna
+    # Menangani namespace SVG jika ada
+    namespaces = {'svg': 'http://www.w3.org/2000/svg'}
+    
+    # Iterasi setiap elemen dan ganti atribut warna yang relevan
     for element in root.iter():
-        if 'style' in element.attrib:
-            element.attrib['style'] = element.attrib['style'].replace('#000000', new_color)  # Default color
+        # Ganti atribut 'fill' atau 'stroke' jika ada
         if 'fill' in element.attrib:
-            element.attrib['fill'] = element.attrib['fill'].replace('#000000', new_color)  # Default color
+            if element.attrib['fill'].startswith('#'):  # Untuk memastikan format warna hex
+                element.attrib['fill'] = new_color
+        if 'stroke' in element.attrib:
+            if element.attrib['stroke'].startswith('#'):  # Untuk memastikan format warna hex
+                element.attrib['stroke'] = new_color
+        if 'style' in element.attrib:
+            # Ganti warna dalam style inline (misalnya fill dan stroke dalam style)
+            style = element.attrib['style']
+            element.attrib['style'] = style.replace('fill:#000000', f'fill:{new_color}').replace('stroke:#000000', f'stroke:{new_color}')
     
     # Simpan file SVG yang telah diperbarui
     new_svg_path = svg_path.stem + f"_modified{svg_path.suffix}"
