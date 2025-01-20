@@ -5,12 +5,9 @@ from pathlib import Path
 import re
 
 # Fungsi untuk mengganti warna di file SVG
-def change_svg_color(svg_path, selected_paths, new_color):
+def change_svg_color(svg_path, path_colors):
     tree = ET.parse(svg_path)
     root = tree.getroot()
-    
-    # Menangani namespace SVG jika ada
-    namespaces = {'svg': 'http://www.w3.org/2000/svg'}
     
     # Regex untuk menemukan berbagai format warna
     color_patterns = [
@@ -31,7 +28,8 @@ def change_svg_color(svg_path, selected_paths, new_color):
         if 'id' in element.attrib:
             path_id = element.attrib['id']
             # Ganti warna hanya pada path yang dipilih
-            if path_id in selected_paths:
+            if path_id in path_colors:
+                new_color = path_colors[path_id]
                 if 'fill' in element.attrib:
                     element.attrib['fill'] = replace_color_in_string(element.attrib['fill'], new_color)
                 if 'stroke' in element.attrib:
@@ -46,8 +44,8 @@ def change_svg_color(svg_path, selected_paths, new_color):
 
 # Streamlit app untuk batch mengubah warna SVG
 def main():
-    st.title("SVG Color Batch Changer with Preview")
-    
+    st.title("SVG Color Batch Changer with Individual Path Color Selection")
+
     # Upload multiple SVG files
     uploaded_files = st.file_uploader("Upload SVG Files", type="svg", accept_multiple_files=True)
     
@@ -64,27 +62,34 @@ def main():
             # Menyaring elemen path yang memiliki id
             paths = [element.attrib['id'] for element in root.iter('path') if 'id' in element.attrib]
             
-            # Jika ada path yang ditemukan, tampilkan checkbox untuk memilih path
+            # Jika ada path yang ditemukan, tampilkan color picker untuk masing-masing path
             if paths:
-                selected_paths = st.multiselect(
-                    "Select Paths to Change Color",
-                    options=paths,
-                    default=paths  # Secara default pilih semua path
-                )
+                path_colors = {}
+                for path_id in paths:
+                    # Menemukan atribut warna yang sudah ada (fill atau stroke)
+                    color = None
+                    for element in root.iter('path'):
+                        if 'id' in element.attrib and element.attrib['id'] == path_id:
+                            if 'fill' in element.attrib:
+                                color = element.attrib['fill']
+                            elif 'stroke' in element.attrib:
+                                color = element.attrib['stroke']
+                            break
+                    # Jika tidak ada warna, gunakan warna default
+                    if color is None:
+                        color = '#000000'  # default to black
+                    
+                    # Tampilkan color picker untuk masing-masing path
+                    selected_color = st.color_picker(f"Select color for {path_id}", color)
+                    path_colors[path_id] = selected_color
+
             else:
                 st.write("No paths with 'id' found in the SVG.")
 
-            # Color picker untuk memilih warna
-            selected_color = st.color_picker("Pick a color", "#FF5733")
-            
-            # Menampilkan preview warna yang dipilih
-            st.write("Selected Color Preview:")
-            st.markdown(f'<div style="width: 100px; height: 100px; background-color: {selected_color};"></div>', unsafe_allow_html=True)
-
             # Button untuk menerapkan warna ke path yang dipilih
-            if st.button("Apply Color"):
+            if st.button("Apply Colors"):
                 st.write("Processing...")
-                new_svg_path = change_svg_color(svg_path, selected_paths, selected_color)
+                new_svg_path = change_svg_color(svg_path, path_colors)
                 # Tampilkan tombol download untuk file SVG yang telah dimodifikasi
                 st.download_button(
                     label="Download Modified SVG",
