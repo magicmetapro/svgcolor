@@ -1,3 +1,4 @@
 streamlit
 cairosvg
 Pillow
+lxml
