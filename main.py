@@ -2,8 +2,9 @@ import streamlit as st
 import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
+import re
 
-# Fungsi untuk mengubah warna SVG
+# Fungsi untuk mengganti warna di file SVG
 def change_svg_color(svg_path, new_color):
     tree = ET.parse(svg_path)
     root = tree.getroot()
@@ -11,20 +12,30 @@ def change_svg_color(svg_path, new_color):
     # Menangani namespace SVG jika ada
     namespaces = {'svg': 'http://www.w3.org/2000/svg'}
     
+    # Regex untuk menemukan berbagai format warna
+    color_patterns = [
+        r'#[0-9a-fA-F]{6}',        # Hex warna (#RRGGBB)
+        r'rgb\((\d{1,3}), (\d{1,3}), (\d{1,3})\)',  # RGB (rgb(255, 255, 255))
+        r'rgba\((\d{1,3}), (\d{1,3}), (\d{1,3}), ([0-9\.]+)\)',  # RGBA (rgba(255, 255, 255, 1))
+        r'\b[a-zA-Z]+\b',  # Nama warna (red, blue, etc.)
+    ]
+    
+    # Fungsi untuk mengganti warna berdasarkan format
+    def replace_color_in_string(input_string, new_color):
+        for pattern in color_patterns:
+            input_string = re.sub(pattern, new_color, input_string)
+        return input_string
+
     # Iterasi setiap elemen dan ganti atribut warna yang relevan
     for element in root.iter():
         # Ganti atribut 'fill' atau 'stroke' jika ada
         if 'fill' in element.attrib:
-            if element.attrib['fill'].startswith('#'):  # Untuk memastikan format warna hex
-                element.attrib['fill'] = new_color
+            element.attrib['fill'] = replace_color_in_string(element.attrib['fill'], new_color)
         if 'stroke' in element.attrib:
-            if element.attrib['stroke'].startswith('#'):  # Untuk memastikan format warna hex
-                element.attrib['stroke'] = new_color
+            element.attrib['stroke'] = replace_color_in_string(element.attrib['stroke'], new_color)
         if 'style' in element.attrib:
-            # Ganti warna dalam style inline (misalnya fill dan stroke dalam style)
-            style = element.attrib['style']
-            element.attrib['style'] = style.replace('fill:#000000', f'fill:{new_color}').replace('stroke:#000000', f'stroke:{new_color}')
-    
+            element.attrib['style'] = replace_color_in_string(element.attrib['style'], new_color)
+
     # Simpan file SVG yang telah diperbarui
     new_svg_path = svg_path.stem + f"_modified{svg_path.suffix}"
     tree.write(new_svg_path)
