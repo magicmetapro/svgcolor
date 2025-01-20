@@ -2,8 +2,6 @@ import streamlit as st
 import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from io import StringIO
-from PIL import Image
 
 # Fungsi untuk mengubah warna SVG
 def change_svg_color(svg_path, new_color):
@@ -56,10 +54,11 @@ def main():
             
             # Display modified files for download
             for output_file in output_files:
+                output_file_name = Path(output_file).name  # Correct way to extract the file name
                 st.download_button(
-                    label=f"Download {output_file.name}",
+                    label=f"Download {output_file_name}",
                     data=open(output_file, "rb").read(),
-                    file_name=output_file.name,
+                    file_name=output_file_name,
                     mime="image/svg+xml"
                 )
                 os.remove(output_file)
