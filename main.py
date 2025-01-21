@@ -17,9 +17,8 @@ def convert_svg_to_eps(svg_file_path, output_dir):
     return eps_file_path
 
 def main():
-    st.title("Bulk SVG to EPS Converter")
-    st.write("Upload one or more SVG files to convert them to EPS format. All files will retain their original names with `.eps` extensions.")
-
+    st.title("MetaEPS")
+    
     # File uploader for multiple SVG files
     uploaded_files = st.file_uploader("Choose SVG files", type="svg", accept_multiple_files=True)
 
