@@ -1,6 +1,7 @@
 import streamlit as st
 import cairosvg
 import tempfile
+import os  # Ensure os is imported
 import shutil
 
 def convert_svg_to_eps(svg_file):
@@ -38,8 +39,11 @@ def main():
             )
 
         # Clean up temporary files
-        os.remove(svg_file_path)
-        os.remove(eps_file_path)
+        try:
+            os.remove(svg_file_path)
+            os.remove(eps_file_path)
+        except Exception as e:
+            st.error(f"Error cleaning up files: {e}")
 
 if __name__ == "__main__":
     main()
