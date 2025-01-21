@@ -1,41 +1,45 @@
 import streamlit as st
-from io import BytesIO
 import cairosvg
+import tempfile
+import shutil
 
-# Fungsi untuk mengonversi SVG ke EPS
-def convert_svg_to_eps(svg_data):
-    eps_output = BytesIO()
-    cairosvg.svg2eps(bytestring=svg_data, write_to=eps_output)
-    eps_output.seek(0)
-    return eps_output
+def convert_svg_to_eps(svg_file):
+    """Convert SVG file to EPS using cairosvg"""
+    # Create a temporary file for the EPS output
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".eps") as tmp_eps_file:
+        # Convert SVG to EPS and save it to the temporary file
+        cairosvg.svg2eps(url=svg_file, write_to=tmp_eps_file.name)
+        return tmp_eps_file.name
 
-# Streamlit App
 def main():
     st.title("SVG to EPS Converter")
+    
+    st.write("Upload your SVG file to convert it to EPS format.")
 
-    # File uploader untuk file SVG
-    uploaded_file = st.file_uploader("Upload an SVG file", type="svg")
+    # File uploader for SVG file
+    uploaded_file = st.file_uploader("Choose an SVG file", type="svg")
+    
     if uploaded_file is not None:
-        st.subheader("Uploaded SVG File")
-        st.image(uploaded_file, caption="Preview SVG", use_column_width=True)
+        # Save the uploaded file to a temporary location
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".svg") as tmp_svg_file:
+            tmp_svg_file.write(uploaded_file.read())
+            svg_file_path = tmp_svg_file.name
+        
+        # Convert the SVG to EPS
+        eps_file_path = convert_svg_to_eps(svg_file_path)
 
-        try:
-            # Baca file SVG
-            svg_data = uploaded_file.read()
-            
-            # Konversi ke EPS
-            eps_file = convert_svg_to_eps(svg_data)
-
-            # Tampilkan tautan unduh untuk file EPS
-            st.success("SVG successfully converted to EPS!")
+        # Provide a download link for the EPS file
+        with open(eps_file_path, "rb") as eps_file:
             st.download_button(
                 label="Download EPS file",
                 data=eps_file,
-                file_name="converted.eps",
-                mime="application/postscript",
+                file_name="converted_image.eps",
+                mime="application/postscript"
             )
-        except Exception as e:
-            st.error(f"Error during conversion: {e}")
+
+        # Clean up temporary files
+        os.remove(svg_file_path)
+        os.remove(eps_file_path)
 
 if __name__ == "__main__":
     main()
