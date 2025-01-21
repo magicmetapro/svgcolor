@@ -1,49 +1,58 @@
 import streamlit as st
 import cairosvg
+import os
+import zipfile
 import tempfile
-import os  # Ensure os is imported
-import shutil
 
-def convert_svg_to_eps(svg_file):
-    """Convert SVG file to EPS using cairosvg"""
-    # Create a temporary file for the EPS output
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".eps") as tmp_eps_file:
-        # Convert SVG to EPS and save it to the temporary file
-        cairosvg.svg2eps(url=svg_file, write_to=tmp_eps_file.name)
-        return tmp_eps_file.name
+def convert_svg_to_eps(svg_file_path, output_dir):
+    """
+    Convert an SVG file to EPS and save it in the specified output directory.
+    The output file retains the same name as the SVG file but with an .eps extension.
+    """
+    # Extract file name without extension
+    base_name = os.path.splitext(os.path.basename(svg_file_path))[0]
+    eps_file_path = os.path.join(output_dir, f"{base_name}.eps")
+    # Convert SVG to EPS
+    cairosvg.svg2eps(url=svg_file_path, write_to=eps_file_path)
+    return eps_file_path
 
 def main():
-    st.title("SVG to EPS Converter")
-    
-    st.write("Upload your SVG file to convert it to EPS format.")
+    st.title("Bulk SVG to EPS Converter")
+    st.write("Upload one or more SVG files to convert them to EPS format. All files will retain their original names with `.eps` extensions.")
 
-    # File uploader for SVG file
-    uploaded_file = st.file_uploader("Choose an SVG file", type="svg")
-    
-    if uploaded_file is not None:
-        # Save the uploaded file to a temporary location
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".svg") as tmp_svg_file:
-            tmp_svg_file.write(uploaded_file.read())
-            svg_file_path = tmp_svg_file.name
-        
-        # Convert the SVG to EPS
-        eps_file_path = convert_svg_to_eps(svg_file_path)
+    # File uploader for multiple SVG files
+    uploaded_files = st.file_uploader("Choose SVG files", type="svg", accept_multiple_files=True)
 
-        # Provide a download link for the EPS file
-        with open(eps_file_path, "rb") as eps_file:
-            st.download_button(
-                label="Download EPS file",
-                data=eps_file,
-                file_name="converted_image.eps",
-                mime="application/postscript"
-            )
+    if uploaded_files:
+        # Create a temporary directory to store files
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            eps_files = []
 
-        # Clean up temporary files
-        try:
-            os.remove(svg_file_path)
-            os.remove(eps_file_path)
-        except Exception as e:
-            st.error(f"Error cleaning up files: {e}")
+            # Process each uploaded SVG file
+            for uploaded_file in uploaded_files:
+                # Save uploaded SVG to a temporary file
+                svg_file_path = os.path.join(tmp_dir, uploaded_file.name)
+                with open(svg_file_path, "wb") as svg_file:
+                    svg_file.write(uploaded_file.read())
+
+                # Convert SVG to EPS
+                eps_file_path = convert_svg_to_eps(svg_file_path, tmp_dir)
+                eps_files.append(eps_file_path)
+
+            # Create a ZIP file with all converted EPS files
+            zip_file_path = os.path.join(tmp_dir, "converted_eps_files.zip")
+            with zipfile.ZipFile(zip_file_path, "w") as zipf:
+                for eps_file in eps_files:
+                    zipf.write(eps_file, os.path.basename(eps_file))
+
+            # Provide the ZIP file for download
+            with open(zip_file_path, "rb") as zipf:
+                st.download_button(
+                    label="Download All EPS Files as ZIP",
+                    data=zipf,
+                    file_name="converted_eps_files.zip",
+                    mime="application/zip"
+                )
 
 if __name__ == "__main__":
     main()
