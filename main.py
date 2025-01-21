@@ -2,19 +2,23 @@ import streamlit as st
 from xml.etree import ElementTree as ET
 
 def make_svg_transparent(svg_data, transparency=0.5):
-    # Parse the SVG data from a string
-    root = ET.fromstring(svg_data)
+    # Parse the SVG data, accounting for namespaces
+    try:
+        root = ET.fromstring(svg_data)
+    except ET.ParseError as e:
+        st.error(f"Error parsing the SVG file: {e}")
+        return None
     
-    # Modify transparency-related attributes
+    # Modify transparency-related attributes, handling namespaces
     for elem in root.iter():
-        if "opacity" in elem.attrib:
-            elem.attrib["opacity"] = str(transparency)
-        if "fill-opacity" in elem.attrib:
-            elem.attrib["fill-opacity"] = str(transparency)
-        if "stroke-opacity" in elem.attrib:
-            elem.attrib["stroke-opacity"] = str(transparency)
+        if 'opacity' in elem.attrib:
+            elem.attrib['opacity'] = str(transparency)
+        if 'fill-opacity' in elem.attrib:
+            elem.attrib['fill-opacity'] = str(transparency)
+        if 'stroke-opacity' in elem.attrib:
+            elem.attrib['stroke-opacity'] = str(transparency)
     
-    # Return a properly serialized SVG string with the XML structure intact
+    # Return a properly serialized SVG string with XML structure intact
     return ET.tostring(root, encoding="unicode", method="xml")
 
 # Streamlit interface
@@ -31,14 +35,11 @@ if uploaded_file:
     
     # Add a Process button to modify the SVG
     if st.button("Process"):
-        try:
-            # Modify SVG transparency when the button is pressed
-            transparent_svg = make_svg_transparent(svg_content, transparency)
-            
+        transparent_svg = make_svg_transparent(svg_content, transparency)
+        
+        if transparent_svg:
             # Display the modified SVG with safe HTML rendering
             st.markdown(f"<div style='text-align: center;'>{transparent_svg}</div>", unsafe_allow_html=True)
             
             # Provide a download link for the modified SVG
             st.download_button("Download Transparent SVG", transparent_svg, file_name="transparent_svg.svg")
-        except Exception as e:
-            st.error(f"Error processing SVG: {e}")
