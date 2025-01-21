@@ -14,8 +14,8 @@ def make_svg_transparent(svg_data, transparency=0.5):
         if "stroke-opacity" in elem.attrib:
             elem.attrib["stroke-opacity"] = str(transparency)
     
-    # Serialize the SVG back to a string
-    return ET.tostring(root, encoding="unicode")
+    # Return a properly serialized SVG string with the XML structure intact
+    return ET.tostring(root, encoding="unicode", method="xml")
 
 # Streamlit interface
 st.title("SVG Transparency Modifier")
@@ -31,11 +31,14 @@ if uploaded_file:
     
     # Add a Process button to modify the SVG
     if st.button("Process"):
-        # Modify SVG transparency when the button is pressed
-        transparent_svg = make_svg_transparent(svg_content, transparency)
-        
-        # Display the modified SVG
-        st.markdown(f"<div style='text-align: center;'>{transparent_svg}</div>", unsafe_allow_html=True)
-        
-        # Provide a download link
-        st.download_button("Download Transparent SVG", transparent_svg, file_name="transparent_svg.svg")
+        try:
+            # Modify SVG transparency when the button is pressed
+            transparent_svg = make_svg_transparent(svg_content, transparency)
+            
+            # Display the modified SVG with safe HTML rendering
+            st.markdown(f"<div style='text-align: center;'>{transparent_svg}</div>", unsafe_allow_html=True)
+            
+            # Provide a download link for the modified SVG
+            st.download_button("Download Transparent SVG", transparent_svg, file_name="transparent_svg.svg")
+        except Exception as e:
+            st.error(f"Error processing SVG: {e}")
