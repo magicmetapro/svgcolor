@@ -29,11 +29,13 @@ if uploaded_file:
     # Set transparency level
     transparency = st.slider("Select transparency level", 0.0, 1.0, 0.5)
     
-    # Modify SVG transparency
-    transparent_svg = make_svg_transparent(svg_content, transparency)
-    
-    # Display the modified SVG
-    st.markdown(f"<div style='text-align: center;'>{transparent_svg}</div>", unsafe_allow_html=True)
-    
-    # Provide a download link
-    st.download_button("Download Transparent SVG", transparent_svg, file_name="transparent_svg.svg")
+    # Add a Process button to modify the SVG
+    if st.button("Process"):
+        # Modify SVG transparency when the button is pressed
+        transparent_svg = make_svg_transparent(svg_content, transparency)
+        
+        # Display the modified SVG
+        st.markdown(f"<div style='text-align: center;'>{transparent_svg}</div>", unsafe_allow_html=True)
+        
+        # Provide a download link
+        st.download_button("Download Transparent SVG", transparent_svg, file_name="transparent_svg.svg")
