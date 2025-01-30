@@ -25,3 +25,6 @@ matplotlib
 numpy
 scipy
 opencv-python
+moviepy
+ffmpeg-python
+lottie
