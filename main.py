@@ -2,7 +2,7 @@ import streamlit as st
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-import opencv-python
+import opencv
 import tempfile
 import os
 from PIL import Image
