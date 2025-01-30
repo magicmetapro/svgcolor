@@ -21,3 +21,7 @@ pydrive2
 uuid
 wand
 lxml
+matplotlib
+numpy
+scipy
+opencv-python
