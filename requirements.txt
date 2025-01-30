@@ -27,4 +27,5 @@ scipy
 opencv-python
 moviepy
 ffmpeg-python
-lottie
+lottie[renderer]
+manim-lottie
