@@ -21,3 +21,5 @@ pydrive2
 uuid
 wand
 lxml
+lottie
+moviepy
