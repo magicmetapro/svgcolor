@@ -21,7 +21,3 @@ pydrive2
 uuid
 wand
 lxml
-json5==0.9.6
-matplotlib==3.7.1
-numpy==1.24.1
-opencv-python==4.7.0.72
