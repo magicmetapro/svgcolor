@@ -2,52 +2,44 @@ import streamlit as st
 import json
 import tempfile
 import os
-from lottie import Lottie
 from moviepy.editor import VideoClip
+from lottie.importers.core import import_tgs
+from PIL import Image
 
-def convert_lottie_to_mp4(lottie_json, output_file):
-    # Simpan JSON ke file sementara
-    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as temp_json:
-        temp_json.write(json.dumps(lottie_json).encode('utf-8'))
-        temp_json_path = temp_json.name
+def lottie_to_frames(lottie_data, duration=1, fps=30):
+    """Konversi animasi Lottie ke daftar frame gambar."""
+    animation = import_tgs(lottie_data)
+    frames = []
+    for t in range(int(duration * fps)):
+        img = animation.render_frame(t / fps)
+        frames.append(Image.fromarray(img))
+    return frames
 
-    # Konversi Lottie JSON ke MP4
-    lottie = Lottie(temp_json_path)
-    lottie.save_as_mp4(output_file)
+def frames_to_video(frames, output_path, fps=30):
+    """Konversi daftar frame menjadi video MP4."""
+    def make_frame(t):
+        frame_index = min(int(t * fps), len(frames) - 1)
+        return frames[frame_index]
+    
+    clip = VideoClip(make_frame, duration=len(frames)/fps)
+    clip.write_videofile(output_path, fps=fps, codec='libx264')
 
-    # Hapus file JSON sementara
-    os.remove(temp_json_path)
+st.title("Lottie JSON to MP4 Converter")
 
-def main():
-    st.title("Konversi Lottie JSON ke MP4")
+uploaded_file = st.file_uploader("Upload Lottie JSON File", type=["json"])
 
-    # Unggah file JSON
-    uploaded_file = st.file_uploader("Unggah file Lottie JSON", type=["json"])
-
-    if uploaded_file is not None:
-        # Baca file JSON
-        lottie_json = json.load(uploaded_file)
-
-        # Tampilkan animasi Lottie
-        st.write("Animasi Lottie:")
-        st.json(lottie_json)
-
-        # Konversi ke MP4
-        output_file = "output.mp4"
-        convert_lottie_to_mp4(lottie_json, output_file)
-
-        # Tampilkan video MP4
-        st.write("Video MP4:")
-        st.video(output_file)
-
-        # Tautan unduh video
-        with open(output_file, "rb") as file:
-            btn = st.download_button(
-                label="Unduh MP4",
-                data=file,
-                file_name=output_file,
-                mime="video/mp4"
-            )
-
-if __name__ == "__main__":
-    main()
+if uploaded_file:
+    lottie_data = json.load(uploaded_file)
+    st.json(lottie_data)
+    
+    with st.spinner("Processing animation..."):
+        frames = lottie_to_frames(lottie_data, duration=2, fps=30)
+        
+        temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+        frames_to_video(frames, temp_video.name, fps=30)
+        
+    st.success("Conversion complete!")
+    st.video(temp_video.name)
+    
+    with open(temp_video.name, "rb") as file:
+        st.download_button("Download MP4", file, "animation.mp4", "video/mp4")
